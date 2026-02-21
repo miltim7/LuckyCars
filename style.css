@@ -1,3 +1,9 @@
+/* Very Small — 422px */
+@media (max-width: 422px) {
+    .hero-3d {
+        height: 320px;
+    }
+}
 /* Lucky Cars — Clean Light Design */
 
 :root {
@@ -1859,7 +1865,7 @@ body {
     }
     
     .hero-title {
-        font-size: 1.6rem;
+        font-size: 2.3rem;
         margin-bottom: 12px;
     }
     
@@ -2197,8 +2203,8 @@ body {
     }
     
     .hero-title {
-        font-size: 1.35rem;
-        line-height: 1.3;
+        font-size: 1.85rem;
+        line-height: 1.22;
     }
     
     .hero-3d {
@@ -2421,11 +2427,10 @@ body {
 /* Extra Small — 360px */
 @media (max-width: 360px) {
     .hero-title {
-        font-size: 1.2rem;
+        font-size: 1.45rem;
     }
-    
     .hero-3d {
-        height: 180px;
+        height: 220px;
     }
     
     .hero-button {
