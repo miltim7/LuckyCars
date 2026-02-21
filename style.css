@@ -431,10 +431,13 @@ body {
     height: 100%;
     position: relative;
     z-index: 2;
+    touch-action: auto;
+    pointer-events: auto;
 }
 
 #car-container canvas {
     filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.15)) drop-shadow(0 40px 80px rgba(39, 174, 96, 0.1));
+    pointer-events: none;
 }
 
 /* Floating particles */
