@@ -1,6 +1,7 @@
 // car3d.js - 3D Car Model with GLTFLoader
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 function initCar3D() {
@@ -26,12 +27,13 @@ function initCar3D() {
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     container.appendChild(renderer.domElement);
 
-    // OrbitControls for manual rotation
+    // OrbitControls for auto rotation only (no manual control)
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
     controls.enableZoom = false;
     controls.enablePan = false;
+    controls.enableRotate = false;
     controls.autoRotate = true;
     controls.autoRotateSpeed = 3;
     controls.minPolarAngle = Math.PI / 3;
@@ -74,11 +76,18 @@ function initCar3D() {
         return 6.5;
     }
 
-    // Load GLB model
+    // Load GLB model with Draco compression support
     const loader = new GLTFLoader();
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+    loader.setDRACOLoader(dracoLoader);
+
+    // Hide container until model loads
+    container.style.opacity = '0';
+    container.style.transition = 'opacity 1.5s cubic-bezier(0.25, 0.1, 0.25, 1)';
 
     loader.load(
-        'model.glb',
+        'model-quality.glb',
         (gltf) => {
             carModel = gltf.scene;
             
@@ -98,6 +107,12 @@ function initCar3D() {
             carModel.position.y -= 0.2;
             
             scene.add(carModel);
+            
+            // Fade in the model smoothly after a short delay
+            setTimeout(() => {
+                container.style.opacity = '1';
+            }, 100);
+            
             console.log('3D car model loaded successfully');
         },
         (progress) => {

@@ -33,8 +33,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = {
             brand: formData.get('brand'),
             year: formData.get('year'),
+            mileage: formData.get('mileage'),
             condition: formData.get('condition'),
-            desiredPrice: formData.get('desired-price'),
             phone: formData.get('phone'),
             photosCount: formData.getAll('photos').length
         };
@@ -51,14 +51,14 @@ document.addEventListener('DOMContentLoaded', () => {
             top: 100px;
             left: 50%;
             transform: translateX(-50%);
-            background: linear-gradient(135deg, #00d084, #ffd700);
-            color: #0f1419;
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: #fff;
             padding: 16px 32px;
-            border-radius: 8px;
+            border-radius: 12px;
             font-weight: 600;
             z-index: 9999;
             animation: slideDown 0.3s ease;
-            box-shadow: 0 8px 24px rgba(0, 208, 132, 0.3);
+            box-shadow: 0 8px 24px rgba(39, 174, 96, 0.3);
         `;
         
         document.body.appendChild(successMessage);
@@ -72,28 +72,125 @@ document.addEventListener('DOMContentLoaded', () => {
         // Reset form
         form.reset();
         
-        // Reset file input display
-        updateFileLabels();
+        // Reset file preview
+        const previewContainer = document.getElementById('file-preview');
+        if (previewContainer) previewContainer.innerHTML = '';
+        const fileCountEl = document.querySelector('.file-count');
+        if (fileCountEl) fileCountEl.textContent = '';
     });
 
     // File Upload Handler
     const fileInput = document.querySelector('input[type="file"]');
+    const fileUploadArea = document.querySelector('.file-upload-area');
+    const filePreviewContainer = document.getElementById('file-preview');
     
-    fileInput.addEventListener('change', updateFileLabels);
-    
-    function updateFileLabels() {
-        const fileCount = fileInput.files ? fileInput.files.length : 0;
-        const fileLabelText = document.querySelector('.file-label-text');
-        const fileCount_ = document.querySelector('.file-count');
+    if (fileInput && fileUploadArea) {
+        fileInput.addEventListener('change', handleFileSelect);
         
-        if (fileCount > 0) {
-            fileLabelText.textContent = fileCount === 1 ? '1 фото добавлено' : `Добавлено фото: ${fileCount}`;
-            fileLabelText.style.color = '#fff';
-            fileCount_.textContent = `${fileCount} ${fileCount === 1 ? 'файл' : 'файлов'} выбрано`;
-        } else {
-            fileLabelText.textContent = 'Прикрепить фото авто';
-            fileLabelText.style.color = 'var(--accent-green)';
-            fileCount_.textContent = '';
+        // Drag & Drop support
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            fileUploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            fileUploadArea.addEventListener(eventName, () => {
+                fileUploadArea.classList.add('drag-over');
+            }, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            fileUploadArea.addEventListener(eventName, () => {
+                fileUploadArea.classList.remove('drag-over');
+            }, false);
+        });
+        
+        fileUploadArea.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            // Create a new DataTransfer to merge files
+            const dataTransfer = new DataTransfer();
+            
+            // Add dropped files
+            Array.from(files).forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    dataTransfer.items.add(file);
+                }
+            });
+            
+            fileInput.files = dataTransfer.files;
+            handleFileSelect();
+        }, false);
+        
+        function handleFileSelect() {
+            const files = fileInput.files;
+            const fileCount = files ? files.length : 0;
+            const fileCountEl = document.querySelector('.file-count');
+            
+            // Update counter
+            if (fileCount > 0) {
+                const word = getFilesWord(fileCount);
+                fileCountEl.textContent = `Выбрано: ${fileCount} ${word}`;
+            } else {
+                fileCountEl.textContent = '';
+            }
+            
+            // Show previews
+            if (filePreviewContainer) {
+                filePreviewContainer.innerHTML = '';
+                
+                Array.from(files).forEach((file, index) => {
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        
+                        reader.onload = (e) => {
+                            const previewItem = document.createElement('div');
+                            previewItem.className = 'file-preview-item';
+                            previewItem.innerHTML = `
+                                <img src="${e.target.result}" alt="Превью ${index + 1}">
+                                <button type="button" class="file-preview-remove" data-index="${index}">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="18" y1="6" x2="6" y2="18"/>
+                                        <line x1="6" y1="6" x2="18" y2="18"/>
+                                    </svg>
+                                </button>
+                            `;
+                            filePreviewContainer.appendChild(previewItem);
+                            
+                            // Add remove handler
+                            previewItem.querySelector('.file-preview-remove').addEventListener('click', () => {
+                                removeFile(index);
+                            });
+                        };
+                        
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+        }
+        
+        function removeFile(indexToRemove) {
+            const dataTransfer = new DataTransfer();
+            
+            Array.from(fileInput.files).forEach((file, index) => {
+                if (index !== indexToRemove) {
+                    dataTransfer.items.add(file);
+                }
+            });
+            
+            fileInput.files = dataTransfer.files;
+            handleFileSelect();
+        }
+        
+        function getFilesWord(n) {
+            if (n % 10 === 1 && n % 100 !== 11) return 'файл';
+            if ([2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100)) return 'файла';
+            return 'файлов';
         }
     }
 
@@ -343,4 +440,242 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.key === 'ArrowRight') nextSlide();
         });
     }
+    
+    // Reviews Slider
+    const reviewsTrack = document.querySelector('.reviews-track');
+    const reviewCards = document.querySelectorAll('.review-card');
+    const reviewsPrevBtn = document.querySelector('.reviews-prev');
+    const reviewsNextBtn = document.querySelector('.reviews-next');
+    const reviewsDotsContainer = document.querySelector('.reviews-dots');
+    
+    if (reviewsTrack && reviewCards.length > 0) {
+        let reviewsIndex = 0;
+        
+        function getVisibleReviews() {
+            if (window.innerWidth <= 768) return 1;
+            if (window.innerWidth <= 1024) return 2;
+            return 3;
+        }
+        
+        function getTotalReviewPages() {
+            return Math.ceil(reviewCards.length / getVisibleReviews());
+        }
+        
+        function createReviewsDots() {
+            reviewsDotsContainer.innerHTML = '';
+            const totalPages = getTotalReviewPages();
+            for (let i = 0; i < totalPages; i++) {
+                const dot = document.createElement('button');
+                dot.className = 'reviews-dot' + (i === 0 ? ' active' : '');
+                dot.addEventListener('click', () => goToReviewPage(i));
+                reviewsDotsContainer.appendChild(dot);
+            }
+        }
+        
+        function goToReviewPage(page) {
+            const visibleReviews = getVisibleReviews();
+            const maxPage = getTotalReviewPages() - 1;
+            reviewsIndex = Math.max(0, Math.min(page, maxPage));
+            updateReviewsSlider();
+        }
+        
+        function updateReviewsSlider() {
+            const visibleReviews = getVisibleReviews();
+            const cardWidth = reviewCards[0].offsetWidth + 24; // width + gap
+            const offset = reviewsIndex * visibleReviews * cardWidth;
+            reviewsTrack.style.transform = `translateX(-${offset}px)`;
+            
+            // Update dots
+            const dots = reviewsDotsContainer.querySelectorAll('.reviews-dot');
+            dots.forEach((dot, i) => {
+                dot.classList.toggle('active', i === reviewsIndex);
+            });
+            
+            // Update buttons
+            reviewsPrevBtn.disabled = reviewsIndex === 0;
+            reviewsNextBtn.disabled = reviewsIndex >= getTotalReviewPages() - 1;
+        }
+        
+        function nextReviewPage() {
+            if (reviewsIndex < getTotalReviewPages() - 1) {
+                reviewsIndex++;
+                updateReviewsSlider();
+            }
+        }
+        
+        function prevReviewPage() {
+            if (reviewsIndex > 0) {
+                reviewsIndex--;
+                updateReviewsSlider();
+            }
+        }
+        
+        reviewsPrevBtn.addEventListener('click', prevReviewPage);
+        reviewsNextBtn.addEventListener('click', nextReviewPage);
+        
+        // Initialize
+        createReviewsDots();
+        updateReviewsSlider();
+        
+        // Handle resize
+        let resizeReviewsTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeReviewsTimeout);
+            resizeReviewsTimeout = setTimeout(() => {
+                reviewsIndex = 0;
+                createReviewsDots();
+                updateReviewsSlider();
+            }, 150);
+        });
+        
+        // Touch support for reviews
+        let reviewsTouchStartX = 0;
+        let reviewsTouchEndX = 0;
+        
+        reviewsTrack.addEventListener('touchstart', (e) => {
+            reviewsTouchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+        
+        reviewsTrack.addEventListener('touchend', (e) => {
+            reviewsTouchEndX = e.changedTouches[0].screenX;
+            const diff = reviewsTouchStartX - reviewsTouchEndX;
+            if (Math.abs(diff) > 50) {
+                if (diff > 0) {
+                    nextReviewPage();
+                } else {
+                    prevReviewPage();
+                }
+            }
+        }, { passive: true });
+        
+        // Mouse drag support for reviews
+        let reviewsMouseStartX = 0;
+        let isReviewsMouseDragging = false;
+        
+        reviewsTrack.addEventListener('mousedown', (e) => {
+            reviewsMouseStartX = e.clientX;
+            isReviewsMouseDragging = true;
+            e.preventDefault();
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (!isReviewsMouseDragging) return;
+            reviewsTouchEndX = e.clientX;
+        });
+        
+        document.addEventListener('mouseup', () => {
+            if (!isReviewsMouseDragging) return;
+            isReviewsMouseDragging = false;
+            
+            const diff = reviewsMouseStartX - reviewsTouchEndX;
+            if (Math.abs(diff) > 50) {
+                if (diff > 0) {
+                    nextReviewPage();
+                } else {
+                    prevReviewPage();
+                }
+            }
+        });
+    }
+
+    // ===== SCROLL ANIMATIONS =====
+    initScrollAnimations();
 });
+
+// Scroll Animations with Intersection Observer
+function initScrollAnimations() {
+    // Add animation classes to elements
+    const animationConfig = [
+        // Process section
+        { selector: '.process .section-title', class: 'animate-fade-up' },
+        { selector: '.process-step', class: 'animate-fade-up' },
+        
+        // Gallery section
+        { selector: '.gallery-section .section-title', class: 'animate-fade-up' },
+        { selector: '.gallery-slider', class: 'animate-fade-up' },
+        
+        // Advantages section
+        { selector: '.advantages .section-title', class: 'animate-fade-up' },
+        { selector: '.advantage-card', class: 'animate-scale' },
+        { selector: '.stat-item', class: 'animate-fade-up' },
+        
+        // Reviews section
+        { selector: '.reviews .section-title', class: 'animate-fade-up' },
+        { selector: '.reviews .section-subtitle', class: 'animate-fade-up' },
+        { selector: '.reviews-slider-container', class: 'animate-fade-up' },
+        
+        // Form section
+        { selector: '.form-section .section-title', class: 'animate-fade-up' },
+        { selector: '.form-section .section-subtitle', class: 'animate-fade-up' },
+        { selector: '.evaluation-form', class: 'animate-fade-up' },
+        
+        // Footer
+        { selector: '.footer-section', class: 'animate-fade-up' }
+    ];
+
+    // Apply classes to elements
+    animationConfig.forEach(config => {
+        document.querySelectorAll(config.selector).forEach(el => {
+            el.classList.add(config.class);
+        });
+    });
+
+    // Create Intersection Observer
+    const observerOptions = {
+        root: null, // viewport
+        rootMargin: '0px 0px -80px 0px', // trigger slightly before fully visible
+        threshold: 0.1 // 10% visible
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                // Stop observing once animated
+                observer.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+
+    // Observe all animated elements
+    const animatedElements = document.querySelectorAll(
+        '.animate-fade-up, .animate-fade, .animate-scale, .animate-slide-left, .animate-slide-right, .animate-on-scroll'
+    );
+
+    animatedElements.forEach(el => {
+        observer.observe(el);
+    });
+
+    // Animate hero elements immediately on page load - smooth sequence
+    // Model loads separately and fades in when ready
+    requestAnimationFrame(() => {
+        // Header appears first - smooth fade
+        const logo = document.querySelector('.logo');
+        const headerRight = document.querySelector('.header-right');
+        
+        if (logo) logo.classList.add('visible');
+        
+        setTimeout(() => {
+            if (headerRight) headerRight.classList.add('visible');
+        }, 150);
+        
+        // Hero background and particles
+        setTimeout(() => {
+            document.querySelectorAll('.hero-bg-text, .hero-particles').forEach(el => {
+                el.classList.add('visible');
+            });
+        }, 250);
+        
+        // Hero title
+        setTimeout(() => {
+            const heroTitle = document.querySelector('.hero-title');
+            if (heroTitle) heroTitle.classList.add('visible');
+        }, 400);
+        
+        // Hero button (model animates separately in car3d.js)
+        setTimeout(() => {
+            const heroButton = document.querySelector('.hero-button');
+            if (heroButton) heroButton.classList.add('visible');
+        }, 600);
+    });
+}
